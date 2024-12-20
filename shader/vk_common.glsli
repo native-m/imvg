@@ -1,0 +1,11 @@
+layout(push_constant) uniform DrawCmd {
+    vec2 inv_viewport;
+    vec2 min_bb;
+    vec2 max_bb;
+    uint vtx_offset;
+    uint winding_stride;
+    uint winding_offset;
+    uint fill_mode;
+    uint paint_type;
+    uint color;
+};
