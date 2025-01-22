@@ -42,6 +42,7 @@ enum IvgPaintType
 {
     IvgPaintType_Solid,
     IvgPaintType_Linear,
+    IvgPaintType_Radial,
 };
 
 enum IvgPathCmd
@@ -93,8 +94,78 @@ struct IvgRect
 
 struct IvgMat
 {
-    float m[6];
+    union
+    {
+        float m[9];
+        float mm[3][3];
+    };
+
+    IvgMat() : m{ 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f } {}
+
+    IvgMat(float m00, float m01, float m02,
+           float m10, float m11, float m12,
+           float m20, float m21, float m22) :
+        m{ m00, m01, m02, m10, m11, m12, m20, m21, m22 }
+    {
+    }
+
+    IvgMat(const IvgMat& other) :
+        m{ other.m[0], other.m[1], other.m[2], other.m[3], other.m[4], other.m[5], other.m[6], other.m[7], other.m[8] }
+    {
+    }
+
+    IvgMat(bool) {}
+
+    IvgMat& operator=(const IvgMat& other)
+    {
+        m[0] = other.m[0];
+        m[1] = other.m[1];
+        m[2] = other.m[2];
+        m[3] = other.m[3];
+        m[4] = other.m[4];
+        m[5] = other.m[5];
+        m[6] = other.m[6];
+        m[7] = other.m[7];
+        m[8] = other.m[8];
+        return *this;
+    }
+
+    float* operator[](uint32_t i) { return m + (i * 3u); }
+    const float* operator[](uint32_t i) const { return m + (i * 3u); }
 };
+
+static inline IvgMat operator+(const IvgMat& a, const IvgMat& b)
+{
+    IvgMat ret(false);
+    ret.m[0] = a.m[0] + b.m[0]; ret.m[1] = a.m[1] + b.m[1]; ret.m[2] = a.m[2] + b.m[2];
+    ret.m[3] = a.m[3] + b.m[3]; ret.m[4] = a.m[4] + b.m[4]; ret.m[5] = a.m[5] + b.m[5];
+    ret.m[6] = a.m[6] + b.m[6]; ret.m[7] = a.m[7] + b.m[7]; ret.m[5] = a.m[8] + b.m[8];
+    return ret;
+}
+
+static inline IvgMat operator-(const IvgMat& a, const IvgMat& b)
+{
+    IvgMat ret(false);
+    ret.m[0] = a.m[0] + b.m[0]; ret.m[1] = a.m[1] + b.m[1]; ret.m[2] = a.m[2] + b.m[2];
+    ret.m[3] = a.m[3] + b.m[3]; ret.m[4] = a.m[4] + b.m[4]; ret.m[5] = a.m[5] + b.m[5];
+    ret.m[6] = a.m[6] + b.m[6]; ret.m[7] = a.m[7] + b.m[7]; ret.m[5] = a.m[8] + b.m[8];
+    return ret;
+}
+
+static inline IvgMat operator*(const IvgMat& a, const IvgMat& b)
+{
+    IvgMat ret(false);
+    ret.m[0] = (a.m[0] * b.m[0]) + (a.m[1] * b.m[3]) + (a.m[2] * b.m[6]);
+    ret.m[1] = (a.m[0] * b.m[1]) + (a.m[1] * b.m[4]) + (a.m[2] * b.m[7]);
+    ret.m[2] = (a.m[0] * b.m[2]) + (a.m[1] * b.m[5]) + (a.m[2] * b.m[8]);
+    ret.m[3] = (a.m[3] * b.m[0]) + (a.m[4] * b.m[3]) + (a.m[5] * b.m[6]);
+    ret.m[4] = (a.m[3] * b.m[1]) + (a.m[4] * b.m[4]) + (a.m[5] * b.m[7]);
+    ret.m[5] = (a.m[3] * b.m[2]) + (a.m[4] * b.m[5]) + (a.m[5] * b.m[8]);
+    ret.m[6] = (a.m[6] * b.m[0]) + (a.m[7] * b.m[3]) + (a.m[8] * b.m[6]);
+    ret.m[7] = (a.m[6] * b.m[1]) + (a.m[7] * b.m[4]) + (a.m[8] * b.m[7]);
+    ret.m[8] = (a.m[6] * b.m[2]) + (a.m[7] * b.m[5]) + (a.m[8] * b.m[8]);
+    return ret;
+}
 
 struct IvgColor
 {
